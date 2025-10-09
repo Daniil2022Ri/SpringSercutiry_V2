@@ -2,7 +2,7 @@ package ru.kata.spring.boot_security.demo.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.kata.spring.boot_security.demo.dao.UserHibernateRepository;
+import ru.kata.spring.boot_security.demo.repository.UserHibernateRepository;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 
@@ -33,23 +33,23 @@ public class UserServiceImpl implements UserService {
         roleUser.add(roleU);
         this.save(new User( "Daniil", "Rybiakov", 25, "$2a$10$mRFRuhocPANBW3nGPh02zeHZYWuILHwJze5lRcYVFXctE.G2lZKlm", "user@mail.com", roleUser));
     }
-
+    @Override
     public List<User> listAll(){
         return userHibernateRepository.findAll();
     }
-
+    @Override
     public void save(User user){
         userHibernateRepository.save(user);
     }
-
+    @Override
     public User get(Long id){
         return userHibernateRepository.findById(id);
     }
-
+    @Override
     public void delete(Long id) {
         userHibernateRepository.deleteById(id);
     }
-
+    @Override
     public User getUserByEmail(String email) {
         return userHibernateRepository.getUserByEmail(email);
     }
