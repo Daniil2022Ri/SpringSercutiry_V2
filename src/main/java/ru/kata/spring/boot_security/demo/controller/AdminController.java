@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
+import ru.kata.spring.boot_security.demo.repository.UserRepository;
 import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
@@ -25,9 +26,11 @@ public class AdminController {
 
 
     @Autowired
-    public AdminController(UserService userService, RoleService roleService ) {
+    public AdminController(UserService userService,
+                           RoleService roleService) {
         this.userService = userService;
         this.roleService = roleService;
+
 
     }
 
@@ -52,8 +55,8 @@ public class AdminController {
         return "new_user";
     }
 
-    @PostMapping("/edit")
-    public String editUser(@RequestParam String username,
+    @PostMapping("/newUser")
+    public String createNewUser(@RequestParam String username,
                            @RequestParam String lastName,
                            @RequestParam int age,
                            @RequestParam String email ,
@@ -61,6 +64,11 @@ public class AdminController {
                            @RequestParam Set<Role> roles
     ) {
             userService.createUser(username , lastName ,age , email , password , roles);
+        return "redirect:/admin";
+    }
+    @PostMapping("/edit")
+    public String updateUser(User user){
+        userService.updateUser(user);
         return "redirect:/admin";
     }
 

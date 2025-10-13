@@ -3,11 +3,12 @@ package ru.kata.spring.boot_security.demo.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import ru.kata.spring.boot_security.demo.repository.UserHibernateRepository;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
+import ru.kata.spring.boot_security.demo.repository.UserRepository;
 
 import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,16 +17,19 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private final UserHibernateRepository userHibernateRepository;
+    private final UserRepository userRepository;
+
     private final PasswordEncoder passwordEncoder;
+
     @Autowired
-    public UserServiceImpl(UserHibernateRepository userHibernateRepository ,
+    public UserServiceImpl(UserRepository userRepository ,
                            PasswordEncoder passwordEncoder) {
-        this.userHibernateRepository = userHibernateRepository;
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @PostConstruct
+    @Transactional
     private void construct(){
         Set<Role> roleAdmin = new HashSet<>();
         Role role = new Role("ROLE_ADMIN");
@@ -37,7 +41,7 @@ public class UserServiceImpl implements UserService {
         roleUser.add(roleU);
         this.save(new User( "Daniil", "Rybiakov", 25, "$2a$10$mRFRuhocPANBW3nGPh02zeHZYWuILHwJze5lRcYVFXctE.G2lZKlm", "user@mail.com", roleUser));
     }
-
+    @Transactional
     @Override
     public void createUser( String firstName, String lastName, int age ,
                             String email , String password , Set<Role> roles) {
@@ -48,28 +52,53 @@ public class UserServiceImpl implements UserService {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         user.setRoles(roles);
-        userHibernateRepository.save(user);
+        userRepository.save(user);
     }
-
+    @Transactional
     @Override
     public List<User> listAll(){
-        return userHibernateRepository.findAll().stream().distinct().collect(Collectors.toList());
+        return userRepository.findAll().stream().distinct().collect(Collectors.toList());
     }
+    @Transactional
     @Override
     public void save(User user){
-        userHibernateRepository.save(user);
+        userRepository.save(user);
     }
+
+    @Transactional
     @Override
     public User get(Long id){
-        return userHibernateRepository.findById(id);
+        return userRepository.getById(id);
     }
+
+    @Transactional
     @Override
     public void delete(Long id) {
-        userHibernateRepository.deleteById(id);
+        userRepository.deleteById(id);
     }
+
+    @Transactional
     @Override
     public User getUserByEmail(String email) {
-        return userHibernateRepository.getUserByEmail(email);
+        return userRepository.getUserByEmail(email);
+    }
+
+    @Transactional
+    @Override
+    public void updateUser(User user) {
+        User existingUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + user.getId()));
+
+        existingUser.setUsername(user.getUsername());
+        existingUser.setLastName(user.getLastName());
+        existingUser.setAge(user.getAge());
+        existingUser.setEmail(user.getEmail());
+        existingUser.setRoles(user.getRoles());
+
+        if (!user.getPassword().isEmpty() && !user.getPassword().equals(existingUser.getPassword())) {
+            existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        userRepository.save(existingUser);
     }
 
 }
