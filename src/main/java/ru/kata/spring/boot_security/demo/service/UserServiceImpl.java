@@ -1,8 +1,9 @@
 package ru.kata.spring.boot_security.demo.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import ru.kata.spring.boot_security.demo.dto.UserDTO;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.repository.UserRepository;
@@ -15,18 +16,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
-
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository ,
-                           PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @PostConstruct
     @Transactional
@@ -61,8 +56,8 @@ public class UserServiceImpl implements UserService {
     }
     @Transactional
     @Override
-    public void save(User user){
-        userRepository.save(user);
+    public User save(User user){
+       return userRepository.save(user);
     }
 
     @Transactional
@@ -100,5 +95,26 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.save(existingUser);
     }
+
+    @Override
+    public User createNewUserRest(UserDTO userDTO) {
+         User user = User.builder()
+                .username(userDTO.getUsername())
+                .lastName(userDTO.getLastName())
+                .age(userDTO.getAge())
+                .email(userDTO.getEmail())
+                .password(userDTO.getPassword()).build();
+         return userRepository.save(user);
+    }
+    public List<User>getAllUsersRest(){
+        return userRepository.findAll();
+    }
+    public User updateUserRest(User user){
+        return userRepository.save(user);
+    }
+    public void deleteUserRest(Long id){
+        userRepository.deleteById(id);
+    }
+
 
 }

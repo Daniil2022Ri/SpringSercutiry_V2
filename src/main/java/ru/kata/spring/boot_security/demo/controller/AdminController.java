@@ -1,39 +1,24 @@
 package ru.kata.spring.boot_security.demo.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
-import ru.kata.spring.boot_security.demo.model.Role;
-import ru.kata.spring.boot_security.demo.model.User;
-import ru.kata.spring.boot_security.demo.repository.UserRepository;
 import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
-import javax.servlet.http.HttpServletRequest;
-import java.security.Principal;
-import java.util.List;
-import java.util.Set;
-
 
 @Controller
+@AllArgsConstructor
 public class AdminController {
 
     private final UserService userService;
     private final RoleService roleService;
 
-
-    @Autowired
-    public AdminController(UserService userService,
-                           RoleService roleService) {
-        this.userService = userService;
-        this.roleService = roleService;
-
-
+    @GetMapping("/admin")
+    public String adminPage(){
+        return "admin";
     }
-
+    /*
     @GetMapping("/admin")
     public String viewHomePage(Model model, Principal principal) {
         List<User> users = userService.listAll();
@@ -86,4 +71,6 @@ public class AdminController {
         mav.setViewName("error");
         return mav;
     }
+
+ */
 }

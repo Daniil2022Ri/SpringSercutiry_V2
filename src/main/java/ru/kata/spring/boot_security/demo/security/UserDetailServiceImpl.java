@@ -1,6 +1,6 @@
 package ru.kata.spring.boot_security.demo.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,14 +17,10 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 @Service("userDetailServiceImpl")
+@AllArgsConstructor
 public class UserDetailServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
-
-    @Autowired
-    public UserDetailServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
 
     @Override
     @Transactional
