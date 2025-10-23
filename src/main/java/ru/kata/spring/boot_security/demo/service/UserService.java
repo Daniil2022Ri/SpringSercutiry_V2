@@ -11,11 +11,11 @@ import java.util.Set;
 
 public interface UserService {
 
-    User createNewUserRest(UserDTO userDTO);
+    User createNewUserRest(User user);
     List<User>getAllUsersRest();
     User updateUserRest(User user);
     void deleteUserRest(Long id);
-
+    User findByUsername(String username);
 
     void createUser(String firstName, String lastName, int age ,
                     String email , String password , Set<Role> roles);
@@ -25,5 +25,5 @@ public interface UserService {
     void delete(Long id);
     User getUserByEmail(String email);
 
-    void updateUser( User user);
+
 }

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.kata.spring.boot_security.demo.dto.UserDTO;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
+import ru.kata.spring.boot_security.demo.repository.RoleRepository;
 import ru.kata.spring.boot_security.demo.repository.UserRepository;
 
 import javax.annotation.PostConstruct;
@@ -15,12 +16,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 @Service
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-
+    private final RoleService roleService;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     @PostConstruct
@@ -78,42 +81,80 @@ public class UserServiceImpl implements UserService {
         return userRepository.getUserByEmail(email);
     }
 
+
     @Transactional
     @Override
-    public void updateUser(User user) {
+    public User updateUserRest(User user) {
         User existingUser = userRepository.findById(user.getId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + user.getId()));
-
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!existingUser.getUsername().equals(user.getUsername()) &&
+                userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (!existingUser.getEmail().equals(user.getEmail()) &&
+                userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
         existingUser.setUsername(user.getUsername());
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         existingUser.setLastName(user.getLastName());
         existingUser.setAge(user.getAge());
         existingUser.setEmail(user.getEmail());
-        existingUser.setRoles(user.getRoles());
-
-        if (!user.getPassword().isEmpty() && !user.getPassword().equals(existingUser.getPassword())) {
-            existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        Set<Role> validRoles = new HashSet<>();
+        for (Role role : user.getRoles()) {
+            String roleName = role.getName();
+            System.out.println("Processing update role: " + roleName); // Debug
+            Role dbRole = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+            validRoles.add(dbRole);
         }
-        userRepository.save(existingUser);
+        existingUser.setRoles(validRoles);
+        return userRepository.save(existingUser);
     }
 
+    @Transactional
     @Override
-    public User createNewUserRest(UserDTO userDTO) {
-         User user = User.builder()
-                .username(userDTO.getUsername())
-                .lastName(userDTO.getLastName())
-                .age(userDTO.getAge())
-                .email(userDTO.getEmail())
-                .password(userDTO.getPassword()).build();
-         return userRepository.save(user);
+    public User createNewUserRest(User user) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        Set<Role> validRoles = new HashSet<>();
+        for (Role role : user.getRoles()) {
+            String roleName = role.getName();
+            System.out.println("Processing role: " + roleName); // Debug
+            Role dbRole = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+            validRoles.add(dbRole);
+        }
+        user.setRoles(validRoles);
+        User savedUser = userRepository.save(user);
+        System.out.println("Created user: " + savedUser); // Debug
+        return savedUser;
     }
     public List<User>getAllUsersRest(){
         return userRepository.findAll();
     }
-    public User updateUserRest(User user){
-        return userRepository.save(user);
-    }
+
+    @Transactional
+    @Override
     public void deleteUserRest(Long id){
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found");
+        }
         userRepository.deleteById(id);
+        System.out.println("Deleted user ID: " + id); // Debug
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
 

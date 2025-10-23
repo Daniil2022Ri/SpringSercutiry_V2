@@ -11,6 +11,7 @@ import ru.kata.spring.boot_security.demo.service.UserService;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -21,34 +22,53 @@ public class AdminRestController {
     private final RoleService roleService;
 
     @PostMapping("/users")
-    public ResponseEntity<User> createUser(@RequestBody UserDTO userDTO){
-        return new ResponseEntity<>(userService.createNewUserRest(userDTO) , HttpStatus.OK);
+    public ResponseEntity<?> createUser(@RequestBody User user) {
+        try {
+            System.out.println("Received user: " + user); // Debug
+            User createdUser = userService.createNewUserRest(user);
+            return new ResponseEntity<>(createdUser, HttpStatus.OK);
+        } catch (Exception e) {
+            System.out.println("Error creating user: " + e.getMessage()); // Debug
+            return new ResponseEntity<>(Map.of("error", e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> findAllUserPage(){
-        return new ResponseEntity<>(userService.getAllUsersRest() , HttpStatus.OK);
+    public ResponseEntity<List<User>> getAllUsers() {
+        return new ResponseEntity<>(userService.getAllUsersRest(), HttpStatus.OK);
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return new ResponseEntity<>(userService.get(id), HttpStatus.OK);
+    public ResponseEntity<?> getUser(@PathVariable Long id) {
+        try {
+            return new ResponseEntity<>(userService.get(id), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(Map.of("error", e.getMessage()), HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping("/current-user")
     public ResponseEntity<User> getCurrentUser(Principal principal) {
-        return new ResponseEntity<>(userService.getUserByEmail(principal.getName()), HttpStatus.OK);
+        return new ResponseEntity<>(userService.findByUsername(principal.getName()), HttpStatus.OK);
     }
 
     @PutMapping("/users")
-    public ResponseEntity<User> updateUser(@RequestBody User user){
-        return new ResponseEntity<>(userService.updateUserRest(user) , HttpStatus.OK);
+    public ResponseEntity<?> updateUser(@RequestBody User user) {
+        try {
+            return new ResponseEntity<>(userService.updateUserRest(user), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(Map.of("error", e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @DeleteMapping("/users/{id}")
-    public HttpStatus deleteUser(@PathVariable Long id){
-        userService.delete(id);
-        return HttpStatus.OK;
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        try {
+            userService.delete(id);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(Map.of("error", e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
     }
 
 }

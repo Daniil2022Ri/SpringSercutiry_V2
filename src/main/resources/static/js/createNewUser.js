@@ -1,16 +1,11 @@
 $(document).ready(function () {
-    // Объект для работы с API
+    // API Object
     const userApi = {
-        // Получение всех пользователей
         getAllUsers: async () => {
             try {
                 const response = await fetch('/api/users', {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        // Добавьте CSRF-токен, если требуется
-                        // 'X-CSRF-TOKEN': getCsrfToken()
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 return await response.json();
@@ -20,14 +15,11 @@ $(document).ready(function () {
             }
         },
 
-        // Получение пользователя по ID
         getUserById: async (id) => {
             try {
                 const response = await fetch(`/api/users/${id}`, {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 return await response.json();
@@ -37,14 +29,11 @@ $(document).ready(function () {
             }
         },
 
-        // Получение текущего пользователя
         getCurrentUser: async () => {
             try {
                 const response = await fetch('/api/current-user', {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 return await response.json();
@@ -54,19 +43,18 @@ $(document).ready(function () {
             }
         },
 
-        // Создание нового пользователя
         createUser: async (userData) => {
             try {
+                console.log('Creating user:', userData);
                 const response = await fetch('/api/users', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
                 });
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.info || `HTTP error! Status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Server error response:', errorData);
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
                 }
                 return await response.json();
             } catch (error) {
@@ -75,19 +63,18 @@ $(document).ready(function () {
             }
         },
 
-        // Обновление пользователя
         updateUser: async (userData) => {
             try {
+                console.log('Updating user:', userData);
                 const response = await fetch('/api/users', {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
                 });
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.info || `HTTP error! Status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Server error response:', errorData);
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
                 }
                 return await response.json();
             } catch (error) {
@@ -96,14 +83,12 @@ $(document).ready(function () {
             }
         },
 
-        // Удаление пользователя
         deleteUser: async (id) => {
             try {
+                console.log('Deleting user ID:', id);
                 const response = await fetch(`/api/users/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 return true;
@@ -114,12 +99,12 @@ $(document).ready(function () {
         }
     };
 
-    // Функция для отображения уведомлений
+    // Show Alert
     function showAlert(container, message, type = 'success') {
         const alert = `
             <div class="alert alert-${type} alert-dismissible fade show col-12" role="alert">
                 ${message}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <button type="button" class="close" data-dismiss="alert">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>`;
@@ -127,15 +112,18 @@ $(document).ready(function () {
         setTimeout(() => $('.alert').alert('close'), 3000);
     }
 
-    // Заполнение таблицы всех пользователей (Admin)
+    // Fill Admin Table
     async function fillAdminTable() {
         try {
             const users = await userApi.getAllUsers();
+            console.log('Users fetched:', users); // Debug
             const tbody = $('#users_home_table');
             tbody.empty();
             users.forEach(user => {
-                // Проверяем, что роли существуют и обрабатываем их
-                const roles = Array.isArray(user.roles) ? user.roles.map(role => role.name ? role.name.replace('ROLE_', '') : 'N/A').join(', ') : 'N/A';
+                const roles = user.roles && Array.isArray(user.roles)
+                    ? user.roles.map(role => role.name ? role.name.replace('ROLE_', '') : 'N/A').join(', ')
+                    : 'N/A';
+                console.log(`User ${user.username} roles:`, user.roles); // Debug
                 const row = `
                     <tr>
                         <td>${user.id || 'N/A'}</td>
@@ -150,17 +138,25 @@ $(document).ready(function () {
                 tbody.append(row);
             });
         } catch (error) {
+            console.error('Error in fillAdminTable:', error);
             showAlert($('#adminTable'), 'Failed to load users: ' + error.message, 'danger');
         }
     }
 
-    // Заполнение таблицы текущего пользователя (User)
+    // Fill User Table
     async function fillUserTable() {
         try {
             const user = await userApi.getCurrentUser();
+            console.log('Current user fetched:', user);
             const tbody = $('#tableUser tbody');
             tbody.empty();
-            const roles = Array.isArray(user.roles) ? user.roles.map(role => role.name ? role.name.replace('ROLE_', '') : 'N/A').join(', ') : 'N/A';
+            if (!user) {
+                showAlert($('#userTable'), 'No user data available', 'danger');
+                return;
+            }
+            const roles = user.roles && Array.isArray(user.roles)
+                ? user.roles.map(role => role.name ? role.name.replace('ROLE_', '') : 'N/A').join(', ')
+                : 'N/A';
             const row = `
                 <tr>
                     <td>${user.id || 'N/A'}</td>
@@ -172,45 +168,54 @@ $(document).ready(function () {
                 </tr>`;
             tbody.append(row);
         } catch (error) {
+            console.error('Error in fillUserTable:', error);
             showAlert($('#userTable'), 'Failed to load user data: ' + error.message, 'danger');
         }
     }
 
-    // Заполнение модального окна редактирования
+    // Fill Edit Modal
     async function fillEditModal(userId) {
         try {
             const user = await userApi.getUserById(userId);
+            console.log('User for edit:', user);
             const form = $('#editUserForm');
-            form.find('#id1').val(user.id || '');
-            form.find('#username1').val(user.username || '');
-            form.find('#lastName1').val(user.lastName || '');
-            form.find('#age1').val(user.age || '');
-            form.find('#email1').val(user.email || '');
-            form.find('#password1').val(''); // Пароль не заполняем
-            // Устанавливаем выбранные роли
-            const roleValues = Array.isArray(user.roles) ? user.roles.map(role => role.name) : [];
-            form.find('#roles1').val(roleValues);
+            form.find('#id').val(user.id || '');
+            form.find('#username').val(user.username || '');
+            form.find('#lastName').val(user.lastName || '');
+            form.find('#age').val(user.age || '');
+            form.find('#email').val(user.email || '');
+            form.find('#password').val('');
+            const roleValues = user.roles && Array.isArray(user.roles)
+                ? user.roles.map(role => role.name || '')
+                : [];
+            console.log('Edit modal roles:', roleValues); // Debug
+            form.find('#roles').val(roleValues);
             $('#editUserModal').modal('show');
         } catch (error) {
+            console.error('Error in fillEditModal:', error);
             showAlert($('#adminTable'), 'Failed to load user data: ' + error.message, 'danger');
         }
     }
 
-    // Создание нового пользователя
+    // Create User
     function handleCreateUser() {
         $('#addForm').on('submit', async (event) => {
             event.preventDefault();
             const form = $('#addForm');
+            const selectedRoles = Array.from(form.find('#rolesCreate option:selected')).map(option => option.value);
+            console.log('Selected roles:', selectedRoles); // Debug
             const userData = {
                 username: form.find('#usernameCreate').val().trim(),
                 password: form.find('#passwordCreate').val().trim(),
                 lastName: form.find('#surnameCreate').val().trim(),
-                age: parseInt(form.find('#ageCreate').val().trim()),
+                age: parseInt(form.find('#ageCreate').val()),
                 email: form.find('#emailCreate').val().trim(),
-                roles: Array.from(form.find('#rolesCreate option:selected')).map(option => option.value)
+                roles: selectedRoles.map(role => ({ name: role }))
             };
 
-            if (!userData.username || !userData.password || !userData.lastName || !userData.age || !userData.email || !userData.roles.length) {
+            console.log('User data to send:', userData);
+
+            if (!userData.username || !userData.password || !userData.lastName || isNaN(userData.age) || !userData.email || !userData.roles.length) {
                 showAlert(form, 'Please fill in all required fields', 'danger');
                 return;
             }
@@ -223,26 +228,29 @@ $(document).ready(function () {
                 await fillAdminTable();
                 $('.nav-tabs a[href="#adminTable"]').tab('show');
             } catch (error) {
+                console.error('Create user error:', error);
                 showAlert(form, error.message, 'danger');
             }
         });
     }
 
-    // Обновление пользователя
+    // Update User
     function handleUpdateUser() {
         $('#editUserSubmit').on('click', async () => {
             const form = $('#editUserForm');
+            const selectedRoles = Array.from(form.find('#roles option:selected')).map(option => option.value);
+            console.log('Selected roles for update:', selectedRoles);
             const userData = {
-                id: parseInt(form.find('#id1').val()),
-                username: form.find('#username1').val().trim(),
-                lastName: form.find('#lastName1').val().trim(),
-                age: parseInt(form.find('#age1').val()),
-                email: form.find('#email1').val().trim(),
-                password: form.find('#password1').val().trim() || null,
-                roles: Array.from(form.find('#roles1 option:selected')).map(option => option.value)
+                id: parseInt(form.find('#id').val()),
+                username: form.find('#username').val().trim(),
+                lastName: form.find('#lastName').val().trim(),
+                age: parseInt(form.find('#age').val()),
+                email: form.find('#email').val().trim(),
+                password: form.find('#password').val().trim() || null,
+                roles: selectedRoles.map(role => ({ name: role }))
             };
 
-            if (!userData.username || !userData.lastName || !userData.age || !userData.email || !userData.roles.length) {
+            if (!userData.username || !userData.lastName || isNaN(userData.age) || !userData.email || !userData.roles.length) {
                 showAlert($('#editUserModal .modal-body'), 'Please fill in all required fields', 'danger');
                 return;
             }
@@ -253,12 +261,13 @@ $(document).ready(function () {
                 showAlert($('#adminTable'), 'User updated successfully!', 'success');
                 await fillAdminTable();
             } catch (error) {
+                console.error('Update user error:', error);
                 showAlert($('#editUserModal .modal-body'), error.message, 'danger');
             }
         });
     }
 
-    // Удаление пользователя
+    // Delete User
     function handleDeleteUser() {
         $('#users_home_table').on('click', '.delete-user', async function () {
             const userId = $(this).data('id');
@@ -268,13 +277,14 @@ $(document).ready(function () {
                     showAlert($('#adminTable'), 'User deleted successfully!', 'success');
                     await fillAdminTable();
                 } catch (error) {
+                    console.error('Delete user error:', error);
                     showAlert($('#adminTable'), error.message, 'danger');
                 }
             }
         });
     }
 
-    // Обработчик редактирования пользователя
+    // Edit User Handler
     function handleEditUser() {
         $('#users_home_table').on('click', '.edit-user', async function () {
             const userId = $(this).data('id');
@@ -282,18 +292,20 @@ $(document).ready(function () {
         });
     }
 
-    // Инициализация
+    // Initialization
     async function init() {
-        await fillAdminTable();
-        await fillUserTable();
-        handleCreateUser();
-        handleUpdateUser();
-        handleDeleteUser();
-        handleEditUser();
-
-        // Обновление таблиц при переключении вкладок
-        $('a[href="#adminTable"]').on('shown.bs.tab', fillAdminTable);
-        $('a[href="#userTable"]').on('shown.bs.tab', fillUserTable);
+        try {
+            await fillAdminTable();
+            await fillUserTable();
+            handleCreateUser();
+            handleUpdateUser();
+            handleDeleteUser();
+            handleEditUser();
+            $('a[href="#adminTable"]').on('shown.bs.tab', fillAdminTable);
+            $('a[href="#userTable"]').on('shown.bs.tab', fillUserTable);
+        } catch (error) {
+            console.error('Initialization error:', error);
+        }
     }
 
     init();
